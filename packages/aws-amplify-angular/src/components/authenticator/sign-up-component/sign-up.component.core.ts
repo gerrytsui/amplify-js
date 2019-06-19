@@ -15,6 +15,8 @@
 
 import { Component, Input, OnInit, Inject } from '@angular/core';
 import defaultSignUpFieldAssets, { signUpWithEmailFields, signUpWithPhoneNumberFields } from '../../../assets/default-sign-up-fields';
+import defaultPasswordStrengthSettings from '../../../assets/default-password-strength-settings';
+
 import { UsernameAttributes, PhoneFieldOutput } from '../types';
 import { AmplifyService } from '../../../providers/amplify.service';
 import { AuthState } from '../../../providers/auth.state';
@@ -97,6 +99,14 @@ export class SignUpField{
   signUpWith?: boolean;
 }
 
+export class PasswordStrengthSettings{
+  minimumLength?: number;
+  requireLowercase?: boolean;
+  requireNumbers?: boolean;
+  requireSymbols?: boolean;
+  requireUppercase?: boolean;
+}
+
 @Component({
   selector: 'amplify-auth-sign-up-core',
   template,
@@ -113,6 +123,8 @@ export class SignUpComponentCore implements OnInit {
   header: string = 'Create a new account';
   defaultSignUpFields: SignUpField[] = defaultSignUpFieldAssets;
   signUpFields: SignUpField[] = this.defaultSignUpFields;
+  defaultPasswordStrengthSettings: PasswordStrengthSettings = defaultPasswordStrengthSettings;
+  passwordStrengthSettings: PasswordStrengthSettings = this.defaultPasswordStrengthSettings;
   errorMessage: string;
   hiddenFields: any = [];
   passwordPolicy: string;
@@ -368,7 +380,32 @@ export class SignUpComponentCore implements OnInit {
   validate() {
     const invalids = [];
     this.signUpFields.map((el) => {
-      if (el.key !== 'phone_number') {
+      if (el.key == 'password' &&  this.passwordStrengthSettings ) {
+
+        //var myRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})"); //Upper Lower Number and min 8 char
+        var assembleRegexStr = "^";
+        if (this.passwordStrengthSettings.requireLowercase) assembleRegexStr += "(?=.*[a-z])";
+        if (this.passwordStrengthSettings.requireUppercase) assembleRegexStr += "(?=.*[A-Z])";
+        if (this.passwordStrengthSettings.requireNumbers  ) assembleRegexStr += "(?=.*[0-9])";
+        if (this.passwordStrengthSettings.requireSymbols  ) assembleRegexStr += "(?=.*[!@#\$%\^&\*])";
+        if (this.passwordStrengthSettings.minimumLength && Number.isInteger(this.passwordStrengthSettings.minimumLength)  )
+        if (this.passwordStrengthSettings.minimumLength) {
+          if ( Number.isInteger(this.passwordStrengthSettings.minimumLength)) {
+            if (this.passwordStrengthSettings.minimumLength > 0)
+              assembleRegexStr += "(?=.{" + this.passwordStrengthSettings.minimumLength + ",})";
+          }
+        }
+
+        var aRegEx = new RegExp(assembleRegexStr);
+
+        if ( ! aRegEx.test(this.user['password'])  ) {
+            el.invalid = true;
+            invalids.push(this.amplifyService.i18n().get('Invalid password format') + 
+               (this.passwordPolicy) ? ". " + this.passwordPolicy : ""
+             ); // "Invalid password format" is defined in i18n dict (Amplify18n.js)
+        }
+      }
+      else if (el.key !== 'phone_number') {
         if (el.required && !this.user[el.key]) {
           el.invalid = true;
           invalids.push(this.amplifyService.i18n().get(el.label));
