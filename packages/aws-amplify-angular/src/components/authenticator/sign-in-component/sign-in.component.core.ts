@@ -119,7 +119,7 @@ export class SignInComponentCore implements OnInit {
   set authState(authState: AuthState) {
     this._authState = authState;
     this._show = includes(['signIn', 'signedOut', 'signedUp'], authState.state);
-    this.username = authState.user? authState.user.username || '' : '';
+    this.username = authState.user? authState.user.username || (this.username || '') : (this.username || '');
     this.email = authState.user? authState.user.email || '' : '';
     this.country_code = authState.user && authState.user.country_code? authState.user.country_code  : this.country_code;
     this.local_phone_number = authState.user? authState.user.local_phone_number || '' : '';
